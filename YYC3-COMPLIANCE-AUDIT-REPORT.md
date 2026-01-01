@@ -418,7 +418,7 @@ git remote set-url origin https://github.com/yyc3/xy-ai.git
 如有任何问题或需要进一步的帮助，请联系：
 
 - **YYC³ 团队**: <admin@0379.email>
-- **项目仓库**: https://github.com/yyc3/xy-ai.git
+- **项目仓库**: https://github.com/YY-Nexus/yyc3-xy-01.git
 - **文档中心**: docs/
 
 ---

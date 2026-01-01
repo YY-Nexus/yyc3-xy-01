@@ -230,7 +230,7 @@ graph TB
 
 ```bash
 # 克隆项目
-git clone https://github.com/yyc3/xy-ai.git
+git clone https://github.com/YY-Nexus/yyc3-xy-01.git
 cd yyc3-xy-ai
 
 # 配置环境变量
@@ -685,8 +685,8 @@ const logger = winston.createLogger({
 
 ## 📞 联系我们
 
-- **项目主页**: <https://github.com/yyc3/yyc3-xy-ai>
-- **问题反馈**: <https://github.com/yyc3/yyc3-xy-ai/issues>
+- **项目主页**: <https://github.com/YY-Nexus/yyc3-xy-01>
+- **问题反馈**: <https://github.com/YY-Nexus/yyc3-xy-01/issues>
 - **邮箱**: <admin@0379.email>
 - **官网**: <https://yyc3.ai>
 
