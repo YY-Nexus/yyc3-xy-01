@@ -1,0 +1,200 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "edit": "Edit",
+    "delete": "Delete",
+    "retry": "Retry",
+    "refresh": "Refresh",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "close": "Close",
+    "open": "Open",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "more": "More",
+    "less": "Less",
+    "expand": "Expand",
+    "collapse": "Collapse"
+  },
+  "navigation": {
+    "home": "Home",
+    "homework": "Homework",
+    "growth": "Growth",
+    "courses": "Courses",
+    "books": "Books",
+    "profile": "Profile",
+    "settings": "Settings"
+  },
+  "home": {
+    "greeting": "Every day is a unique limited edition!",
+    "learningAssistant": "Happy Learning Assistant",
+    "tagline": "All things return to Xiaoyu",
+    "welcomeMessage": "Welcome back, {name}!",
+    "todayPlan": "Today's Plan",
+    "startHomework": "Start Homework",
+    "homeworkCenter": "Homework Center",
+    "homeworkSubtitle": "Stay focused, you're doing great!",
+    "homeworkTags": {
+      "chinese": "Chinese",
+      "math": "Math"
+    },
+    "features": {
+      "mistakeBook": "Mistake Book",
+      "publicClass": "Public Class",
+      "moodRecord": "Mood Record"
+    }
+  },
+  "growth": {
+    "title": "Growth Records",
+    "subtitle": "Record every precious growth moment",
+    "milestones": "Milestones",
+    "dailyRecords": "Daily Records",
+    "assessments": "Assessments",
+    "photos": "Photo Album",
+    "moodTracking": "Mood Tracking",
+    "addRecord": "Add Record",
+    "viewDetails": "View Details",
+    "editRecord": "Edit Record",
+    "deleteRecord": "Delete Record"
+  },
+  "courses": {
+    "title": "Courses",
+    "subtitle": "Explore the ocean of knowledge",
+    "recommended": "Recommended",
+    "inProgress": "In Progress",
+    "completed": "Completed",
+    "allCourses": "All Courses",
+    "startLearning": "Start Learning",
+    "continueLearning": "Continue Learning",
+    "viewProgress": "View Progress"
+  },
+  "homework": {
+    "title": "Homework Center",
+    "subtitle": "Make learning easier",
+    "aiAssistant": "AI Assistant",
+    "todayTasks": "Today's Tasks",
+    "completedTasks": "Completed",
+    "pendingTasks": "Pending",
+    "mistakes": "Mistake Book",
+    "analysis": "Problem Analysis",
+    "startTask": "Start Task",
+    "viewSolution": "View Solution",
+    "askForHelp": "Ask for Help"
+  },
+  "books": {
+    "title": "Book Reading",
+    "subtitle": "Sail in the sea of books",
+    "recommended": "Recommended",
+    "readingHistory": "Reading History",
+    "favorites": "Favorites",
+    "categories": "Categories",
+    "startReading": "Start Reading",
+    "continueReading": "Continue Reading",
+    "addToFavorites": "Add to Favorites"
+  },
+  "ai": {
+    "assistant": "AI Assistant",
+    "companion": "Growth Companion",
+    "emotionMonitor": "Emotion Monitor",
+    "learningGuide": "Learning Guide",
+    "emotionResponses": {
+      "happiness": [
+        "I'm so happy to see you happy!",
+        "Your happiness is contagious!",
+        "Keep up this great mood!"
+      ],
+      "sadness": [
+        "You seem a bit sad, do you need my company?",
+        "It's okay, everyone feels sad sometimes",
+        "Would you like to talk about what happened?"
+      ],
+      "anger": [
+        "Take a deep breath, let's calm down together",
+        "I'm here with you, take your time",
+        "It's normal to be angry, let's find a solution together"
+      ],
+      "fear": [
+        "Don't worry, I'm here to protect you",
+        "Being scared is normal, we can face it together",
+        "With me here, everything will be alright"
+      ],
+      "curiosity": [
+        "You're such a curious explorer!",
+        "Let's discover the mysteries of this world together",
+        "Your curiosity is wonderful!"
+      ],
+      "attention": [
+        "I'm here, focusing on you",
+        "You're my most important little treasure",
+        "I'm listening carefully to you"
+      ]
+    }
+  },
+  "emotion": {
+    "title": "Emotion Monitor",
+    "currentEmotion": "Current Emotion",
+    "emotionHistory": "Emotion History",
+    "emotionInsights": "Emotion Insights",
+    "alerts": "Emotion Alerts",
+    "trends": "Emotion Trends",
+    "patterns": "Emotion Patterns",
+    "report": "Emotion Report",
+    "concernAlert": "Attention Needed",
+    "positiveMilestone": "Positive Milestone",
+    "emotionalConcern": "Emotional Concern"
+  },
+  "performance": {
+    "title": "Performance Monitor",
+    "dashboard": "Dashboard",
+    "coreMetrics": "Core Metrics",
+    "memoryUsage": "Memory Usage",
+    "networkRequests": "Network Requests",
+    "slowComponents": "Slow Components",
+    "optimizationSuggestions": "Optimization Suggestions",
+    "refreshData": "Refresh Data",
+    "closeDashboard": "Close Panel",
+    "overallScore": "Overall Score",
+    "grade": {
+      "A": "Excellent",
+      "B": "Good",
+      "C": "Average",
+      "D": "Poor",
+      "F": "Very Poor"
+    }
+  },
+  "errors": {
+    "networkError": "Network Connection Issue",
+    "networkErrorDesc": "Unable to connect to the server. Please check your network connection and try again.",
+    "reconnect": "Reconnect",
+    "pageError": "Page Error",
+    "pageErrorDesc": "Sorry, the system encountered an unexpected error. Please try refreshing the page or try again later.",
+    "tryAgain": "Try Again ({count})",
+    "loadError": "Loading Failed",
+    "componentError": "Component Loading Failed",
+    "unknownError": "Unknown Error"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "theme": "Theme",
+    "notifications": "Notifications",
+    "privacy": "Privacy",
+    "about": "About Us",
+    "help": "Help Center",
+    "feedback": "Feedback",
+    "logout": "Logout"
+  },
+  "language": {
+    "switch": "Switch Language",
+    "current": "Current Language",
+    "chinese": "中文",
+    "english": "English"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "name": "yyc3-user-service",
+  "version": "1.0.0",
+  "description": "YYC³ 用户微服务 - 负责用户注册、登录、认证、授权和用户档案管理",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts",
+    "build": "bun build src/index.ts --target bun --outdir dist",
+    "test": "bun test",
+    "lint": "bunx eslint src/**/*.ts",
+    "docker:build": "docker build -t yyc3-user-service .",
+    "docker:run": "docker run -p 8001:8001 yyc3-user-service"
+  },
+  "keywords": ["yyc3", "microservice", "user", "auth", "typescript"],
+  "author": "YYC³ Team",
+  "license": "MIT",
+  "dependencies": {
+    "@hono/node-server": "^1.4.0",
+    "hono": "^3.11.7",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "zod": "^3.22.4",
+    "consul": "^0.40.0",
+    "prom-client": "^15.0.0",
+    "winston": "^3.11.0",
+    "database": "workspace:*",
+    "shared-types": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/node": "^20.8.0",
+    "typescript": "^5.2.2",
+    "bun-types": "^1.0.0"
+  },
+  "engines": {
+    "bun": ">=1.0.0"
+  }
+}

@@ -1,0 +1,501 @@
+version: '3.8'
+
+# YYC³ 数据分析平台部署配置
+# 包含Kafka、Flink、ClickHouse、数据分析服务、可视化服务
+
+networks:
+  yyc3-analytics-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
+
+volumes:
+  kafka_data:
+    driver: local
+  zookeeper_data:
+    driver: local
+  clickhouse_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
+  flink_jobmanager:
+    driver: local
+  flink_taskmanager:
+    driver: local
+
+services:
+  # === 数据流处理基础设施 ===
+
+  # Zookeeper - Kafka依赖
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: yyc3-zookeeper
+    networks:
+      - yyc3-analytics-network
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_SYNC_TIME_LIMIT: 2
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+      - zookeeper_data:/var/lib/zookeeper/log
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Kafka - 分布式消息队列
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: yyc3-kafka
+    networks:
+      - yyc3-analytics-network
+    ports:
+      - "9092:9092"   # 内部通信
+      - "9101:9101"   # JMX监控
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_HOST://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: true
+      KAFKA_DELETE_TOPIC_ENABLE: true
+      KAFKA_LOG_RETENTION_HOURS: 168  # 7天
+      KAFKA_LOG_SEGMENT_BYTES: 1073741824  # 1GB
+      KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS: 300000
+      KAFKA_MESSAGE_MAX_BYTES: 1000000  # 1MB
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_NUM_REPLICATION_FACTOR: 1
+      KAFKA_JMX_PORT: 9101
+      KAFKA_JMX_HOSTNAME: localhost
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Kafka UI - 管理界面
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: yyc3-kafka-ui
+    networks:
+      - yyc3-analytics-network
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: yyc3-kafka-cluster
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    depends_on:
+      - kafka
+    restart: unless-stopped
+
+  # === 流处理引擎 ===
+
+  # Flink JobManager
+  flink-jobmanager:
+    image: flink:1.17-scala_2.12-java11
+    container_name: yyc3-flink-jobmanager
+    networks:
+      - yyc3-analytics-network
+    ports:
+      - "8081:8081"   # Flink UI
+      - "9249:9249"   # JMX监控
+    environment:
+      - JOB_MANAGER_RPC_ADDRESS=flink-jobmanager
+      - FLINK_PROPERTIES=jobmanager.rpc.address: flink-jobmanager
+    volumes:
+      - flink_jobmanager:/opt/flink/conf
+      - ./analytics/flink/jobs:/opt/flink/jobs
+    command: jobmanager
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Flink TaskManager
+  flink-taskmanager:
+    image: flink:1.17-scala_2.12-java11
+    container_name: yyc3-flink-taskmanager
+    networks:
+      - yyc3-analytics-network
+    ports:
+      - "9250:9250"   # JMX监控
+    environment:
+      - JOB_MANAGER_RPC_ADDRESS=flink-jobmanager
+      - FLINK_PROPERTIES=jobmanager.rpc.address: flink-jobmanager
+      - TASK_MANAGER_NUMBER_OF_TASK_SLOTS=4
+    volumes:
+      - flink_taskmanager:/opt/flink/conf
+    command: taskmanager
+    depends_on:
+      flink-jobmanager:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9250"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # === 数据分析存储 ===
+
+  # ClickHouse - OLAP数据库
+  clickhouse:
+    image: clickhouse/clickhouse-server:23.3-alpine
+    container_name: yyc3-clickhouse
+    networks:
+      - yyc3-analytics-network
+    ports:
+      - "8123:8123"   # HTTP接口
+      - "9000:9000"   # Native接口
+      - "9004:9004"   # MySQL兼容接口
+      - "9009:9009"   # 分片接口
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./analytics/clickhouse/config:/etc/clickhouse-server/config.d
+      - ./analytics/clickhouse/init:/docker-entrypoint-initdb.d
+    environment:
+      CLICKHOUSE_DB: yyc3_analytics
+      CLICKHOUSE_USER: yyc3
+      CLICKHOUSE_PASSWORD: analytics_password
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8123/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Redis Stream - 实时缓存和流处理
+  redis-stream:
+    image: redis:7-alpine
+    container_name: yyc3-redis-stream
+    networks:
+      - yyc3-analytics-network
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_stream_data:/data
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 1gb
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Elasticsearch - 全文搜索和日志分析
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.10.2
+    container_name: yyc3-elasticsearch
+    networks:
+      - yyc3-analytics-network
+    ports:
+      - "9200:9200"   # HTTP API
+      - "9300:9300"   # 节点通信
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - bootstrap.memory_lock=true
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Kibana - 数据可视化
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.10.2
+    container_name: yyc3-kibana
+    networks:
+      - yyc3-analytics-network
+    ports:
+      - "5601:5601"
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+      XPACK_SECURITY_ENABLED: false
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # === 数据分析服务 ===
+
+  # 实时分析服务
+  realtime-analytics-service:
+    build:
+      context: ./analytics/services/realtime-analytics
+      dockerfile: Dockerfile
+    container_name: yyc3-realtime-analytics
+    networks:
+      - yyc3-analytics-network
+    ports:
+      - "8101:8101"
+    environment:
+      - PORT=8101
+      - HOST=0.0.0.0
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - CLICKHOUSE_URL=http://clickhouse:8123
+      - CLICKHOUSE_USER=yyc3
+      - CLICKHOUSE_PASSWORD=analytics_password
+      - REDIS_URL=redis://redis-stream:6379
+      - FLINK_REST_URL=http://flink-jobmanager:8081
+      - CONSUL_HOST=consul
+      - CONSUL_PORT=8500
+      - LOG_LEVEL=info
+    depends_on:
+      kafka:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+      redis-stream:
+        condition: service_healthy
+      flink-jobmanager:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8101/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # 智能报表服务
+  analytics-report-service:
+    build:
+      context: ./analytics/services/analytics-report
+      dockerfile: Dockerfile
+    container_name: yyc3-analytics-report
+    networks:
+      - yyc3-analytics-network
+    ports:
+      - "8102:8102"
+    environment:
+      - PORT=8102
+      - HOST=0.0.0.0
+      - CLICKHOUSE_URL=http://clickhouse:8123
+      - CLICKHOUSE_USER=yyc3
+      - CLICKHOUSE_PASSWORD=analytics_password
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      - CONSUL_HOST=consul
+      - CONSUL_PORT=8500
+      - LOG_LEVEL=info
+    volumes:
+      - ./analytics/reports/templates:/app/templates
+      - ./analytics/reports/output:/app/output
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8102/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # 预测分析服务
+  prediction-service:
+    build:
+      context: ./analytics/services/prediction
+      dockerfile: Dockerfile
+    container_name: yyc3-prediction-service
+    networks:
+      - yyc3-analytics-network
+    ports:
+      - "8103:8103"
+    environment:
+      - PORT=8103
+      - HOST=0.0.0.0
+      - CLICKHOUSE_URL=http://clickhouse:8123
+      - CLICKHOUSE_USER=yyc3
+      - CLICKHOUSE_PASSWORD=analytics_password
+      - REDIS_URL=redis://redis-stream:6379
+      - TENSORFLOW_MODEL_PATH=/app/models
+      - CONSUL_HOST=consul
+      - CONSUL_PORT=8500
+      - LOG_LEVEL=info
+    volumes:
+      - ./analytics/prediction/models:/app/models
+      - ./analytics/prediction/data:/app/data
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+      redis-stream:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8103/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # 业务洞察服务
+  business-insights-service:
+    build:
+      context: ./analytics/services/business-insights
+      dockerfile: Dockerfile
+    container_name: yyc3-business-insights
+    networks:
+      - yyc3-analytics-network
+    ports:
+      - "8104:8104"
+    environment:
+      - PORT=8104
+      - HOST=0.0.0.0
+      - CLICKHOUSE_URL=http://clickhouse:8123
+      - CLICKHOUSE_USER=yyc3
+      - CLICKHOUSE_PASSWORD=analytics_password
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - REDIS_URL=redis://redis-stream:6379
+      - CONSUL_HOST=consul
+      - CONSUL_PORT=8500
+      - LOG_LEVEL=info
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      redis-stream:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8104/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # === 数据可视化前端 ===
+
+  # 数据分析仪表板
+  analytics-dashboard:
+    build:
+      context: ./analytics/dashboard
+      dockerfile: Dockerfile
+    container_name: yyc3-analytics-dashboard
+    networks:
+      - yyc3-analytics-network
+    ports:
+      - "3100:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+      - NEXT_PUBLIC_ANALYTICS_API=http://localhost:8101
+      - NEXT_PUBLIC_REPORT_API=http://localhost:8102
+      - NEXT_PUBLIC_PREDICTION_API=http://localhost:8103
+      - NEXT_PUBLIC_INSIGHTS_API=http://localhost:8104
+      - NEXT_PUBLIC_WS_URL=ws://localhost:8101
+    depends_on:
+      - realtime-analytics-service
+      - analytics-report-service
+      - prediction-service
+      - business-insights-service
+    restart: unless-stopped
+
+  # Apache Superset - 智能报表平台
+  superset:
+    image: apache/superset:2.1.0
+    container_name: yyc3-superset
+    networks:
+      - yyc3-analytics-network
+    ports:
+      - "8088:8088"
+    environment:
+      - SUPERSET_CONFIG_PATH=/app/superset_config.py
+      - SUPERSET_SECRET_KEY=yyc3-superset-secret-key-2023
+      - DATABASE_URL=clickhouse+yyc3:yyc3:analytics_password@clickhouse:9000/yyc3_analytics
+      - FLASK_ENV=production
+    volumes:
+      - ./analytics/superset/config:/app/superset_config.py
+      - ./analytics/superset/dashboards:/app/dashboards
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8088/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # === 数据收集器 ===
+
+  # 微服务事件收集器
+  event-collector:
+    build:
+      context: ./analytics/collectors/event-collector
+      dockerfile: Dockerfile
+    container_name: yyc3-event-collector
+    networks:
+      - yyc3-analytics-network
+    ports:
+      - "8105:8105"
+    environment:
+      - PORT=8105
+      - HOST=0.0.0.0
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - KAFKA_TOPIC_PREFIX=yyc3.events
+      - CONSUL_HOST=consul
+      - CONSUL_PORT=8500
+      - LOG_LEVEL=info
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8105/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+volumes:
+  redis_stream_data:
+    driver: local

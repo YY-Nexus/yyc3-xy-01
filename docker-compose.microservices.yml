@@ -1,0 +1,521 @@
+version: '3.8'
+
+# YYC³ 微服务架构部署配置
+# 包含6+核心微服务、API网关、服务发现、监控和可观测性
+
+networks:
+  yyc3-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  postgres_data:
+    driver: local
+  neo4j_data:
+    driver: local
+  redis_data:
+    driver: local
+  consul_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  jaeger_data:
+    driver: local
+  kafka_data:
+    driver: local
+
+services:
+  # === 服务发现 ===
+  consul:
+    image: consul:1.16
+    container_name: yyc3-consul
+    networks:
+      - yyc3-network
+    ports:
+      - "8500:8500"   # HTTP API
+      - "8600:8600/udp" # DNS
+    volumes:
+      - consul_data:/consul/data
+      - ./microservices/consul/config:/consul/config
+    environment:
+      - CONSUL_BIND_INTERFACE=eth0
+      - CONSUL_CLIENT_INTERFACE=eth0
+      - CONSUL_BOOTSTRAP_EXPECT=1
+      - CONSUL_UI=true
+      - CONSUL_RETRY_JOIN=consul
+    command: >
+      consul agent
+      -server
+      -bootstrap-expect=1
+      -ui
+      -bind=0.0.0.0
+      -client=0.0.0.0
+      -retry-join=consul
+      -data-dir=/consul/data
+    healthcheck:
+      test: ["CMD", "consul", "members"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # === API网关 ===
+  kong:
+    image: kong:3.4
+    container_name: yyc3-kong
+    networks:
+      - yyc3-network
+    ports:
+      - "8000:8000"   # API Gateway
+      - "8001:8001"   # Admin API
+      - "8443:8443"   # HTTPS Gateway
+      - "8444:8444"   # HTTPS Admin API
+      - "8100:8100"   # Manager UI
+      - "9090:9090"   # Prometheus Metrics
+    environment:
+      - KONG_DATABASE=off
+      - KONG_DECLARATIVE_CONFIG=/kong/declarative/kong.yml
+      - KONG_PROXY_ACCESS_LOG=/dev/stdout
+      - KONG_ADMIN_ACCESS_LOG=/dev/stdout
+      - KONG_PROXY_ERROR_LOG=/dev/stderr
+      - KONG_ADMIN_ERROR_LOG=/dev/stderr
+      - KONG_ADMIN_LISTEN=0.0.0.0:8001
+      - KONG_ADMIN_GUI_URL=http://localhost:8002
+    volumes:
+      - ./microservices/kong/config:/kong/declarative
+    depends_on:
+      - user-service
+      - ai-service
+      - growth-service
+      - recommendation-service
+      - knowledge-service
+      - notification-service
+    healthcheck:
+      test: ["CMD", "kong", "health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # === 核心微服务 ===
+
+  # 用户服务
+  user-service:
+    build:
+      context: ./microservices/user-service
+      dockerfile: Dockerfile
+    container_name: yyc3-user-service
+    networks:
+      - yyc3-network
+    ports:
+      - "8001:8001"
+    environment:
+      - PORT=8001
+      - HOST=0.0.0.0
+      - DATABASE_URL=postgresql://yyc3:password@postgres:5432/yyc3_users
+      - REDIS_URL=redis://redis:6379
+      - CONSUL_HOST=consul
+      - CONSUL_PORT=8500
+      - JWT_SECRET=${JWT_SECRET:-yyc3-jwt-secret-key}
+      - LOG_LEVEL=info
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      consul:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # AI服务
+  ai-service:
+    build:
+      context: ./microservices/ai-service
+      dockerfile: Dockerfile
+    container_name: yyc3-ai-service
+    networks:
+      - yyc3-network
+    ports:
+      - "8002:8002"
+    environment:
+      - PORT=8002
+      - HOST=0.0.0.0
+      - OLLAMA_URL=http://ollama:11434
+      - CHROMADB_URL=http://chromadb:8000
+      - CONSUL_HOST=consul
+      - CONSUL_PORT=8500
+      - LOG_LEVEL=info
+    depends_on:
+      ollama:
+        condition: service_healthy
+      chromadb:
+        condition: service_healthy
+      consul:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # 成长记录服务
+  growth-service:
+    build:
+      context: ./microservices/growth-service
+      dockerfile: Dockerfile
+    container_name: yyc3-growth-service
+    networks:
+      - yyc3-network
+    ports:
+      - "8003:8003"
+    environment:
+      - PORT=8003
+      - HOST=0.0.0.0
+      - DATABASE_URL=postgresql://yyc3:password@postgres:5432/yyc3_growth
+      - REDIS_URL=redis://redis:6379
+      - CONSUL_HOST=consul
+      - CONSUL_PORT=8500
+      - LOG_LEVEL=info
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      consul:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # 推荐服务
+  recommendation-service:
+    build:
+      context: ./microservices/recommendation-service
+      dockerfile: Dockerfile
+    container_name: yyc3-recommendation-service
+    networks:
+      - yyc3-network
+    ports:
+      - "8004:8004"
+    environment:
+      - PORT=8004
+      - HOST=0.0.0.0
+      - NEO4J_URL=bolt://neo4j:7687
+      - NEO4J_USERNAME=neo4j
+      - NEO4J_PASSWORD=password
+      - REDIS_URL=redis://redis:6379
+      - CONSUL_HOST=consul
+      - CONSUL_PORT=8500
+      - LOG_LEVEL=info
+    depends_on:
+      neo4j:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      consul:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # 知识图谱服务
+  knowledge-service:
+    build:
+      context: ./microservices/knowledge-service
+      dockerfile: Dockerfile
+    container_name: yyc3-knowledge-service
+    networks:
+      - yyc3-network
+    ports:
+      - "8005:8005"
+    environment:
+      - PORT=8005
+      - HOST=0.0.0.0
+      - NEO4J_URL=bolt://neo4j:7687
+      - NEO4J_USERNAME=neo4j
+      - NEO4J_PASSWORD=password
+      - CONSUL_HOST=consul
+      - CONSUL_PORT=8500
+      - LOG_LEVEL=info
+    depends_on:
+      neo4j:
+        condition: service_healthy
+      consul:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # 通知服务
+  notification-service:
+    build:
+      context: ./microservices/notification-service
+      dockerfile: Dockerfile
+    container_name: yyc3-notification-service
+    networks:
+      - yyc3-network
+    ports:
+      - "8006:8006"
+    environment:
+      - PORT=8006
+      - HOST=0.0.0.0
+      - REDIS_URL=redis://redis:6379
+      - KAFKA_BROKERS=kafka:9092
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      - CONSUL_HOST=consul
+      - CONSUL_PORT=8500
+      - LOG_LEVEL=info
+    depends_on:
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      consul:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8006/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # === AI基础设施 ===
+
+  # Ollama本地AI模型
+  ollama:
+    image: ollama/ollama:latest
+    container_name: yyc3-ollama
+    networks:
+      - yyc3-network
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # ChromaDB向量数据库
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: yyc3-chromadb
+    networks:
+      - yyc3-network
+    ports:
+      - "8000:8000"
+    volumes:
+      - chromadb_data:/chroma/chroma
+    environment:
+      - CHROMA_SERVER_HOST=0.0.0.0
+      - CHROMA_SERVER_HTTP_PORT=8000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # === 数据存储 ===
+
+  # PostgreSQL数据库
+  postgres:
+    image: postgres:15-alpine
+    container_name: yyc3-postgres
+    networks:
+      - yyc3-network
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./microservices/postgres/init:/docker-entrypoint-initdb.d
+    environment:
+      - POSTGRES_DB=yyc3
+      - POSTGRES_USER=yyc3
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_MULTIPLE_DATABASES=yyc3_users,yyc3_growth,yyc3_ai,yyc3_notifications
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U yyc3"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Neo4j图数据库
+  neo4j:
+    image: neo4j:5.12-community
+    container_name: yyc3-neo4j
+    networks:
+      - yyc3-network
+    ports:
+      - "7474:7474"   # HTTP
+      - "7687:7687"   # Bolt
+    volumes:
+      - neo4j_data:/data
+    environment:
+      - NEO4J_AUTH=neo4j/password
+      - NEO4J_PLUGINS=["apoc"]
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*
+      - NEO4J_dbms_memory_heap_initial__size=512m
+      - NEO4J_dbms_memory_heap_max__size=2G
+    healthcheck:
+      test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "password", "RETURN 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Redis缓存
+  redis:
+    image: redis:7-alpine
+    container_name: yyc3-redis
+    networks:
+      - yyc3-network
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Kafka消息队列
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: yyc3-kafka
+    networks:
+      - yyc3-network
+    ports:
+      - "9092:9092"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: true
+    depends_on:
+      - zookeeper
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: yyc3-zookeeper
+    networks:
+      - yyc3-network
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # === 监控和可观测性 ===
+
+  # Prometheus监控
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: yyc3-prometheus
+    networks:
+      - yyc3-network
+    ports:
+      - "9090:9090"
+    volumes:
+      - prometheus_data:/prometheus
+      - ./microservices/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./microservices/monitoring/rules:/etc/prometheus/rules
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+
+  # Grafana可视化
+  grafana:
+    image: grafana/grafana:latest
+    container_name: yyc3-grafana
+    networks:
+      - yyc3-network
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./microservices/monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./microservices/monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+  # Jaeger链路追踪
+  jaeger:
+    image: jaegertracing/all-in-one:1.35
+    container_name: yyc3-jaeger
+    networks:
+      - yyc3-network
+    ports:
+      - "16686:16686"   # Jaeger UI
+      - "14268:14268"   # HTTP collector
+      - "6831:6831/udp" # UDP agent
+      - "6832:6832/udp" # UDP agent
+    environment:
+      - COLLECTOR_ZIPKIN_HTTP_PORT=9411
+    restart: unless-stopped
+
+  # Alertmanager告警
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: yyc3-alertmanager
+    networks:
+      - yyc3-network
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./microservices/monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+    restart: unless-stopped

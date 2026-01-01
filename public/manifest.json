@@ -1,0 +1,170 @@
+{
+  "name": "YYC³ AI小语智能成长守护系统",
+  "short_name": "YYC³ AI小语",
+  "description": "0-22岁全周期AI智能成长守护平台 | 五大AI角色陪伴 | 科学育儿指导 | 公益学习·温暖成长",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#FEF3F2",
+  "background_color": "#FEF3F2",
+  "lang": "zh-CN",
+  "categories": ["education", "lifestyle", "utilities", "parenting"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-light-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-light-48x48.png",
+      "sizes": "48x48",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-light-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-light-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-light-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-light-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-light-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-light-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-light-256x256.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-light-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-light-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/home-zh.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "YYC³ AI小语首页 - 中文界面"
+    },
+    {
+      "src": "/screenshots/home-en.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "YYC³ AI小语首页 - English Interface"
+    },
+    {
+      "src": "/screenshots/ai-assistant.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "AI助手功能展示"
+    },
+    {
+      "src": "/screenshots/learning.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "学习中心界面"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "首页",
+      "short_name": "首页",
+      "description": "返回YYC³ AI小语首页",
+      "url": "/",
+      "icons": [
+        {
+          "src": "/icon.svg",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "作业中心",
+      "short_name": "作业",
+      "description": "进入作业中心",
+      "url": "/homework",
+      "icons": [
+        {
+          "src": "/icon.svg",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "成长记录",
+      "short_name": "成长",
+      "description": "查看成长记录",
+      "url": "/growth",
+      "icons": [
+        {
+          "src": "/icon.svg",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "课程学习",
+      "short_name": "课程",
+      "description": "开始课程学习",
+      "url": "/courses",
+      "icons": [
+        {
+          "src": "/icon.svg",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "edge_side_panel": {
+    "preferred_width": 400
+  }
+}

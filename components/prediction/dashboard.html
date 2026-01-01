@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YYC³ 智能预测与集成学习系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/recharts@2.8.0/umd/Recharts.css" rel="stylesheet">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .animate-pulse-slow {
+            animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gray-50">
+    <!-- 主容器 -->
+    <div id="app" class="min-h-screen">
+        <!-- 头部导航 -->
+        <nav class="gradient-bg text-white shadow-lg">
+            <div class="container mx-auto px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                                <span class="text-2xl font-bold text-purple-600">YYC³</span>
+                            </div>
+                            <div>
+                                <h1 class="text-2xl font-bold">智能预测系统</h1>
+                                <p class="text-sm opacity-90">Intelligent Prediction & Ensemble Learning</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center space-x-6">
+                        <div class="flex items-center space-x-2">
+                            <div id="connection-status" class="w-3 h-3 bg-red-500 rounded-full"></div>
+                            <span id="connection-text" class="text-sm">离线</span>
+                        </div>
+                        <button id="settings-btn" class="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- 主要内容区域 -->
+        <div class="container mx-auto px-6 py-8">
+            <!-- 快速统计卡片 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="glass-effect rounded-xl p-6 shadow-lg">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-600">活跃预测任务</p>
+                            <p id="active-tasks" class="text-3xl font-bold text-gray-900">0</p>
+                        </div>
+                        <div class="p-3 bg-blue-100 rounded-lg">
+                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-effect rounded-xl p-6 shadow-lg">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-600">平均准确度</p>
+                            <p id="avg-accuracy" class="text-3xl font-bold text-gray-900">--%</p>
+                        </div>
+                        <div class="p-3 bg-green-100 rounded-lg">
+                            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-effect rounded-xl p-6 shadow-lg">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-600">实时预测</p>
+                            <p id="realtime-count" class="text-3xl font-bold text-gray-900">0</p>
+                        </div>
+                        <div class="p-3 bg-purple-100 rounded-lg">
+                            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-effect rounded-xl p-6 shadow-lg">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-600">系统状态</p>
+                            <p id="system-status" class="text-lg font-bold text-gray-900">健康</p>
+                        </div>
+                        <div id="status-indicator" class="p-3 bg-green-100 rounded-lg">
+                            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 标签页导航 -->
+            <div class="glass-effect rounded-xl shadow-lg mb-6">
+                <div class="border-b border-gray-200">
+                    <nav class="flex -mb-px">
+                        <button data-tab="dashboard" class="tab-btn active px-6 py-4 border-b-2 border-purple-600 font-medium text-purple-600 focus:outline-none">
+                            <div class="flex items-center space-x-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                                </svg>
+                                <span>预测仪表板</span>
+                            </div>
+                        </button>
+                        <button data-tab="config" class="tab-btn px-6 py-4 border-b-2 border-transparent font-medium text-gray-500 hover:text-gray-700 focus:outline-none">
+                            <div class="flex items-center space-x-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                                </svg>
+                                <span>智能配置</span>
+                            </div>
+                        </button>
+                        <button data-tab="monitor" class="tab-btn px-6 py-4 border-b-2 border-transparent font-medium text-gray-500 hover:text-gray-700 focus:outline-none">
+                            <div class="flex items-center space-x-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                </svg>
+                                <span>实时监控</span>
+                            </div>
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- 标签页内容 -->
+                <div class="p-6">
+                    <!-- 预测仪表板 -->
+                    <div id="dashboard-tab" class="tab-content">
+                        <div class="space-y-6">
+                            <!-- 快速操作 -->
+                            <div class="flex flex-wrap gap-4">
+                                <button id="create-task-btn" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
+                                    <div class="flex items-center space-x-2">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                        </svg>
+                                        <span>创建预测任务</span>
+                                    </div>
+                                </button>
+                                <button id="refresh-btn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                                    <div class="flex items-center space-x-2">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                        </svg>
+                                        <span>刷新数据</span>
+                                    </div>
+                                </button>
+                                <button id="export-btn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                                    <div class="flex items-center space-x-2">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                        </svg>
+                                        <span>导出报告</span>
+                                    </div>
+                                </button>
+                            </div>
+
+                            <!-- 预测结果图表 -->
+                            <div class="bg-white rounded-lg p-6 shadow">
+                                <h3 class="text-lg font-semibold mb-4">预测趋势</h3>
+                                <div id="prediction-chart" class="h-64 flex items-center justify-center text-gray-500">
+                                    <div class="text-center">
+                                        <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                                        </svg>
+                                        <p>暂无预测数据</p>
+                                        <p class="text-sm mt-2">创建预测任务开始使用</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 任务列表 -->
+                            <div class="bg-white rounded-lg p-6 shadow">
+                                <h3 class="text-lg font-semibold mb-4">活跃任务</h3>
+                                <div id="task-list" class="space-y-2">
+                                    <div class="text-center text-gray-500 py-8">
+                                        <svg class="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                                        </svg>
+                                        <p>暂无活跃任务</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 智能配置 -->
+                    <div id="config-tab" class="tab-content hidden">
+                        <div class="max-w-4xl mx-auto">
+                            <div class="bg-white rounded-lg p-6 shadow">
+                                <h3 class="text-lg font-semibold mb-4">创建预测任务</h3>
+                                <form id="config-form" class="space-y-4">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">任务名称</label>
+                                            <input type="text" id="task-name" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="输入任务名称">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">算法选择</label>
+                                            <select id="algorithm" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                                                <option value="adaptive_ensemble">自适应集成</option>
+                                                <option value="time_series_exponential_smoothing">指数平滑</option>
+                                                <option value="statistical_anomaly_detection">异常检测</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">任务描述</label>
+                                        <textarea id="task-description" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="描述预测任务的目标和要求"></textarea>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">数据文件</label>
+                                        <input type="file" id="data-file" accept=".json,.csv" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                                    </div>
+
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">准确度要求</label>
+                                            <select id="accuracy-req" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                                                <option value="high">高</option>
+                                                <option value="medium">中</option>
+                                                <option value="low">低</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">速度要求</label>
+                                            <select id="speed-req" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                                                <option value="high">高</option>
+                                                <option value="medium">中</option>
+                                                <option value="low">低</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">实时能力</label>
+                                            <select id="realtime-req" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                                                <option value="true">需要</option>
+                                                <option value="false">不需要</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex justify-end space-x-4">
+                                        <button type="button" id="reset-config-btn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">重置</button>
+                                        <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">创建任务</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 实时监控 -->
+                    <div id="monitor-tab" class="tab-content hidden">
+                        <div class="space-y-6">
+                            <!-- 监控控制 -->
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg font-semibold">实时监控</h3>
+                                <div class="flex items-center space-x-4">
+                                    <button id="start-monitor-btn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                                        <div class="flex items-center space-x-2">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                            <span>开始监控</span>
+                                        </div>
+                                    </button>
+                                    <button id="stop-monitor-btn" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition" disabled>
+                                        <div class="flex items-center space-x-2">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path>
+                                            </svg>
+                                            <span>停止监控</span>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 实时指标 -->
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div class="bg-white rounded-lg p-6 shadow">
+                                    <h4 class="font-medium mb-2">预测延迟</h4>
+                                    <div id="latency-chart" class="h-32"></div>
+                                </div>
+                                <div class="bg-white rounded-lg p-6 shadow">
+                                    <h4 class="font-medium mb-2">置信度分布</h4>
+                                    <div id="confidence-chart" class="h-32"></div>
+                                </div>
+                                <div class="bg-white rounded-lg p-6 shadow">
+                                    <h4 class="font-medium mb-2">错误率</h4>
+                                    <div id="error-chart" class="h-32"></div>
+                                </div>
+                            </div>
+
+                            <!-- 实时日志 -->
+                            <div class="bg-white rounded-lg p-6 shadow">
+                                <h4 class="font-medium mb-4">实时日志</h4>
+                                <div id="monitor-log" class="h-64 overflow-y-auto bg-gray-50 rounded-lg p-4 font-mono text-sm">
+                                    <div class="text-gray-500">等待监控数据...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 消息提示 -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+    <!-- 模态框 -->
+    <div id="modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden z-40"></div>
+    <div id="modal" class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl hidden z-50 w-full max-w-2xl">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 id="modal-title" class="text-lg font-semibold">模态框标题</h3>
+                <button id="modal-close" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div id="modal-content" class="text-gray-700">
+                模态框内容
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载脚本 -->
+    <script type="module">
+        // 导入和管理API
+        const API_BASE = window.location.origin
+
+        class PredictionSystem {
+            constructor() {
+                this.ws = null
+                this.isConnected = false
+                this.activeTasks = []
+                this.monitoring = false
+                this.init()
+            }
+
+            async init() {
+                this.setupEventListeners()
+                await this.connectWebSocket()
+                await this.loadInitialData()
+            }
+
+            setupEventListeners() {
+                // 标签页切换
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        this.switchTab(e.target.closest('.tab-btn').dataset.tab)
+                    })
+                })
+
+                // 配置表单
+                document.getElementById('config-form')?.addEventListener('submit', (e) => {
+                    e.preventDefault()
+                    this.createTask()
+                })
+
+                // 监控控制
+                document.getElementById('start-monitor-btn')?.addEventListener('click', () => {
+                    this.startMonitoring()
+                })
+
+                document.getElementById('stop-monitor-btn')?.addEventListener('click', () => {
+                    this.stopMonitoring()
+                })
+
+                // 刷新按钮
+                document.getElementById('refresh-btn')?.addEventListener('click', () => {
+                    this.loadInitialData()
+                })
+            }
+
+            switchTab(tabName) {
+                // 切换标签样式
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.classList.remove('active', 'border-purple-600', 'text-purple-600')
+                    btn.classList.add('border-transparent', 'text-gray-500')
+                })
+
+                document.querySelector(`[data-tab="${tabName}"]`).classList.add('active', 'border-purple-600', 'text-purple-600')
+                document.querySelector(`[data-tab="${tabName}"]`).classList.remove('border-transparent', 'text-gray-500')
+
+                // 切换内容
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.add('hidden')
+                })
+
+                document.getElementById(`${tabName}-tab`)?.classList.remove('hidden')
+            }
+
+            async connectWebSocket() {
+                try {
+                    this.ws = new WebSocket(`ws://${window.location.host}`)
+
+                    this.ws.onopen = () => {
+                        this.isConnected = true
+                        this.updateConnectionStatus(true)
+                        console.log('WebSocket连接已建立')
+                    }
+
+                    this.ws.onmessage = (event) => {
+                        const data = JSON.parse(event.data)
+                        this.handleWebSocketMessage(data)
+                    }
+
+                    this.ws.onclose = () => {
+                        this.isConnected = false
+                        this.updateConnectionStatus(false)
+                        console.log('WebSocket连接已关闭')
+
+                        // 尝试重连
+                        setTimeout(() => this.connectWebSocket(), 5000)
+                    }
+
+                    this.ws.onerror = (error) => {
+                        console.error('WebSocket错误:', error)
+                        this.isConnected = false
+                        this.updateConnectionStatus(false)
+                    }
+                } catch (error) {
+                    console.error('WebSocket连接失败:', error)
+                    this.updateConnectionStatus(false)
+                }
+            }
+
+            updateConnectionStatus(connected) {
+                const statusEl = document.getElementById('connection-status')
+                const textEl = document.getElementById('connection-text')
+
+                if (connected) {
+                    statusEl.className = 'w-3 h-3 bg-green-500 rounded-full animate-pulse'
+                    textEl.textContent = '在线'
+                } else {
+                    statusEl.className = 'w-3 h-3 bg-red-500 rounded-full'
+                    textEl.textContent = '离线'
+                }
+            }
+
+            async loadInitialData() {
+                try {
+                    // 加载活跃任务
+                    const tasksResponse = await fetch(`${API_BASE}/api/prediction/tasks`)
+                    const tasksData = await tasksResponse.json()
+
+                    if (tasksData.success) {
+                        this.activeTasks = tasksData.tasks
+                        this.updateTaskList()
+                        this.updateStatistics()
+                    }
+                } catch (error) {
+                    console.error('加载初始数据失败:', error)
+                    this.showToast('加载数据失败', 'error')
+                }
+            }
+
+            async createTask() {
+                const formData = new FormData(document.getElementById('config-form'))
+
+                try {
+                    const response = await fetch(`${API_BASE}/api/prediction/tasks`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            name: document.getElementById('task-name').value,
+                            algorithm: document.getElementById('algorithm').value,
+                            description: document.getElementById('task-description').value,
+                            requirements: {
+                                accuracy: document.getElementById('accuracy-req').value,
+                                speed: document.getElementById('speed-req').value,
+                                realtime: document.getElementById('realtime-req').value === 'true'
+                            }
+                        })
+                    })
+
+                    const data = await response.json()
+
+                    if (data.success) {
+                        this.showToast('任务创建成功', 'success')
+                        this.loadInitialData()
+                        document.getElementById('config-form').reset()
+                        this.switchTab('dashboard')
+                    } else {
+                        this.showToast(data.error || '任务创建失败', 'error')
+                    }
+                } catch (error) {
+                    console.error('创建任务失败:', error)
+                    this.showToast('创建任务失败', 'error')
+                }
+            }
+
+            updateTaskList() {
+                const taskListEl = document.getElementById('task-list')
+
+                if (this.activeTasks.length === 0) {
+                    taskListEl.innerHTML = `
+                        <div class="text-center text-gray-500 py-8">
+                            <svg class="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                            </svg>
+                            <p>暂无活跃任务</p>
+                        </div>
+                    `
+                } else {
+                    taskListEl.innerHTML = this.activeTasks.map(task => `
+                        <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                                <div>
+                                    <p class="font-medium">${task.name}</p>
+                                    <p class="text-sm text-gray-600">${task.description}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded">
+                                    ${task.type}
+                                </span>
+                                <button onclick="system.deleteTask('${task.id}')" class="text-red-500 hover:text-red-700">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    `).join('')
+                }
+            }
+
+            updateStatistics() {
+                document.getElementById('active-tasks').textContent = this.activeTasks.length
+                document.getElementById('avg-accuracy').textContent = '85.2%' // 模拟数据
+                document.getElementById('realtime-count').textContent = '0' // 实时更新
+                document.getElementById('system-status').textContent = '健康'
+            }
+
+            async deleteTask(taskId) {
+                try {
+                    const response = await fetch(`${API_BASE}/api/prediction/tasks/${taskId}`, {
+                        method: 'DELETE'
+                    })
+
+                    const data = await response.json()
+
+                    if (data.success) {
+                        this.showToast('任务删除成功', 'success')
+                        this.loadInitialData()
+                    } else {
+                        this.showToast(data.error || '任务删除失败', 'error')
+                    }
+                } catch (error) {
+                    console.error('删除任务失败:', error)
+                    this.showToast('删除任务失败', 'error')
+                }
+            }
+
+            startMonitoring() {
+                this.monitoring = true
+                document.getElementById('start-monitor-btn').disabled = true
+                document.getElementById('stop-monitor-btn').disabled = false
+
+                // 发送监控订阅消息
+                if (this.ws && this.isConnected) {
+                    this.ws.send(JSON.stringify({
+                        type: 'subscribe_monitoring'
+                    }))
+                }
+
+                this.showToast('实时监控已启动', 'success')
+                this.addMonitorLog('监控已启动，开始接收实时数据...')
+            }
+
+            stopMonitoring() {
+                this.monitoring = false
+                document.getElementById('start-monitor-btn').disabled = false
+                document.getElementById('stop-monitor-btn').disabled = true
+
+                this.showToast('实时监控已停止', 'info')
+                this.addMonitorLog('监控已停止')
+            }
+
+            handleWebSocketMessage(data) {
+                switch (data.type) {
+                    case 'prediction_result':
+                        this.handlePredictionResult(data.data)
+                        break
+                    case 'monitoring_subscribed':
+                        this.addMonitorLog('已成功订阅实时监控')
+                        break
+                    case 'error':
+                        this.showToast(data.message, 'error')
+                        this.addMonitorLog(`错误: ${data.message}`)
+                        break
+                }
+            }
+
+            handlePredictionResult(result) {
+                // 更新实时预测数量
+                const countEl = document.getElementById('realtime-count')
+                countEl.textContent = (parseInt(countEl.textContent) + 1).toString()
+
+                // 添加监控日志
+                this.addMonitorLog(`新预测: ${result.prediction} (置信度: ${(result.confidence * 100).toFixed(1)}%)`)
+            }
+
+            addMonitorLog(message) {
+                const logEl = document.getElementById('monitor-log')
+                const time = new Date().toLocaleTimeString()
+                const logEntry = `<div class="mb-1"><span class="text-gray-500">[${time}]</span> ${message}</div>`
+
+                logEl.innerHTML = logEntry + logEl.innerHTML
+
+                // 保持日志数量限制
+                const logs = logEl.querySelectorAll('div')
+                if (logs.length > 50) {
+                    logs[logs.length - 1].remove()
+                }
+            }
+
+            showToast(message, type = 'info') {
+                const container = document.getElementById('toast-container')
+                const toast = document.createElement('div')
+
+                const bgColor = {
+                    success: 'bg-green-500',
+                    error: 'bg-red-500',
+                    info: 'bg-blue-500',
+                    warning: 'bg-yellow-500'
+                }[type]
+
+                toast.className = `${bgColor} text-white px-4 py-2 rounded-lg shadow-lg transform transition-all duration-300 translate-x-96`
+                toast.textContent = message
+
+                container.appendChild(toast)
+
+                // 动画显示
+                setTimeout(() => {
+                    toast.classList.remove('translate-x-96')
+                    toast.classList.add('translate-x-0')
+                }, 10)
+
+                // 自动消失
+                setTimeout(() => {
+                    toast.classList.add('translate-x-96')
+                    setTimeout(() => toast.remove(), 300)
+                }, 3000)
+            }
+        }
+
+        // 初始化系统
+        window.system = new PredictionSystem()
+    </script>
+</body>
+</html>

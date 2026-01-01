@@ -1,0 +1,38 @@
+{
+  "name": "yyc3-ai-service",
+  "version": "1.0.0",
+  "description": "YYC³ AI微服务 - 负责AI对话、本地模型推理、RAG增强生成和个性化回复",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts",
+    "build": "bun build src/index.ts --target bun --outdir dist",
+    "test": "bun test",
+    "lint": "bunx eslint src/**/*.ts",
+    "docker:build": "docker build -t yyc3-ai-service .",
+    "docker:run": "docker run -p 8002:8002 yyc3-ai-service"
+  },
+  "keywords": ["yyc3", "microservice", "ai", "ollama", "rag", "llm"],
+  "author": "YYC³ Team",
+  "license": "MIT",
+  "dependencies": {
+    "@hono/node-server": "^1.4.0",
+    "hono": "^3.11.7",
+    "consul": "^0.40.0",
+    "prom-client": "^15.0.0",
+    "winston": "^3.11.0",
+    "zod": "^3.22.4",
+    "openai": "^4.20.1",
+    "chromadb": "^1.7.3",
+    "database": "workspace:*",
+    "shared-types": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.0",
+    "typescript": "^5.2.2",
+    "bun-types": "^1.0.0"
+  },
+  "engines": {
+    "bun": ">=1.0.0"
+  }
+}

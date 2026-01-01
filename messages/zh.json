@@ -1,0 +1,200 @@
+{
+  "common": {
+    "loading": "加载中...",
+    "error": "错误",
+    "success": "成功",
+    "cancel": "取消",
+    "confirm": "确认",
+    "save": "保存",
+    "edit": "编辑",
+    "delete": "删除",
+    "retry": "重试",
+    "refresh": "刷新",
+    "back": "返回",
+    "next": "下一步",
+    "previous": "上一步",
+    "close": "关闭",
+    "open": "打开",
+    "search": "搜索",
+    "filter": "筛选",
+    "sort": "排序",
+    "more": "更多",
+    "less": "收起",
+    "expand": "展开",
+    "collapse": "折叠"
+  },
+  "navigation": {
+    "home": "首页",
+    "homework": "作业中心",
+    "growth": "成长记录",
+    "courses": "课程学习",
+    "books": "图书阅读",
+    "profile": "个人中心",
+    "settings": "设置"
+  },
+  "home": {
+    "greeting": "每一天都是独有的限量版！",
+    "learningAssistant": "快乐学习助手",
+    "tagline": "万象归元于小语",
+    "welcomeMessage": "欢迎回来，{name}！",
+    "todayPlan": "今日计划",
+    "startHomework": "开始作业",
+    "homeworkCenter": "作业中心",
+    "homeworkSubtitle": "保持专注，你最棒啦！",
+    "homeworkTags": {
+      "chinese": "语文",
+      "math": "数学"
+    },
+    "features": {
+      "mistakeBook": "错题本",
+      "publicClass": "公益课堂",
+      "moodRecord": "心情记录"
+    }
+  },
+  "growth": {
+    "title": "成长记录",
+    "subtitle": "记录每一个珍贵的成长瞬间",
+    "milestones": "成长里程碑",
+    "dailyRecords": "日常记录",
+    "assessments": "发展评估",
+    "photos": "成长相册",
+    "moodTracking": "心情追踪",
+    "addRecord": "添加记录",
+    "viewDetails": "查看详情",
+    "editRecord": "编辑记录",
+    "deleteRecord": "删除记录"
+  },
+  "courses": {
+    "title": "课程学习",
+    "subtitle": "探索知识的海洋",
+    "recommended": "推荐课程",
+    "inProgress": "学习中",
+    "completed": "已完成",
+    "allCourses": "全部课程",
+    "startLearning": "开始学习",
+    "continueLearning": "继续学习",
+    "viewProgress": "查看进度"
+  },
+  "homework": {
+    "title": "作业中心",
+    "subtitle": "让学习变得更轻松",
+    "aiAssistant": "AI作业助手",
+    "todayTasks": "今日任务",
+    "completedTasks": "已完成",
+    "pendingTasks": "待完成",
+    "mistakes": "错题本",
+    "analysis": "题目分析",
+    "startTask": "开始任务",
+    "viewSolution": "查看答案",
+    "askForHelp": "寻求帮助"
+  },
+  "books": {
+    "title": "图书阅读",
+    "subtitle": "在书海中遨游",
+    "recommended": "推荐图书",
+    "readingHistory": "阅读历史",
+    "favorites": "我的收藏",
+    "categories": "图书分类",
+    "startReading": "开始阅读",
+    "continueReading": "继续阅读",
+    "addToFavorites": "添加收藏"
+  },
+  "ai": {
+    "assistant": "AI助手",
+    "companion": "成长伴侣",
+    "emotionMonitor": "情感监测",
+    "learningGuide": "学习指导",
+    "emotionResponses": {
+      "happiness": [
+        "看到你这么开心，我也很高兴呢！",
+        "你的快乐很有感染力！",
+        "继续保持这种好心情哦！"
+      ],
+      "sadness": [
+        "感觉你有点不开心，需要我陪伴吗？",
+        "没关系，每个人都会有难过的时候",
+        "想和我说说发生了什么吗？"
+      ],
+      "anger": [
+        "深呼吸，我们一起冷静下来",
+        "我在这里陪着你，慢慢来",
+        "生气是正常的，我们一起找到解决办法"
+      ],
+      "fear": [
+        "别担心，我在这里保护你",
+        "害怕是很正常的感觉，我们可以一起面对",
+        "有我在，一切都会好起来的"
+      ],
+      "curiosity": [
+        "你真是个爱探索的好奇宝宝！",
+        "让我们一起发现这个世界的奥秘",
+        "你的好奇心真棒！"
+      ],
+      "attention": [
+        "我在这里，专心陪你",
+        "你是我最重要的小宝贝",
+        "我正在认真听你说话呢"
+      ]
+    }
+  },
+  "emotion": {
+    "title": "情感监测",
+    "currentEmotion": "当前情感",
+    "emotionHistory": "情感历史",
+    "emotionInsights": "情感洞察",
+    "alerts": "情感警报",
+    "trends": "情感趋势",
+    "patterns": "情感模式",
+    "report": "情感报告",
+    "concernAlert": "需要关注",
+    "positiveMilestone": "积极里程碑",
+    "emotionalConcern": "情感关注"
+  },
+  "performance": {
+    "title": "性能监控",
+    "dashboard": "监控仪表板",
+    "coreMetrics": "核心指标",
+    "memoryUsage": "内存使用",
+    "networkRequests": "网络请求",
+    "slowComponents": "慢组件",
+    "optimizationSuggestions": "优化建议",
+    "refreshData": "刷新数据",
+    "closeDashboard": "关闭面板",
+    "overallScore": "总体评分",
+    "grade": {
+      "A": "优秀",
+      "B": "良好",
+      "C": "中等",
+      "D": "较差",
+      "F": "很差"
+    }
+  },
+  "errors": {
+    "networkError": "网络连接问题",
+    "networkErrorDesc": "无法连接到服务器，请检查网络连接后重试。",
+    "reconnect": "重新连接",
+    "pageError": "页面错误",
+    "pageErrorDesc": "抱歉，系统遇到了意外错误。请尝试刷新页面或稍后再试。",
+    "tryAgain": "重试 ({count})",
+    "loadError": "加载失败",
+    "componentError": "组件加载失败",
+    "unknownError": "未知错误"
+  },
+  "settings": {
+    "title": "设置",
+    "language": "语言",
+    "theme": "主题",
+    "notifications": "通知设置",
+    "privacy": "隐私设置",
+    "about": "关于我们",
+    "help": "帮助中心",
+    "feedback": "意见反馈",
+    "logout": "退出登录"
+  },
+  "language": {
+    "switch": "切换语言",
+    "current": "当前语言",
+    "chinese": "中文",
+    "english": "English"
+  }
+}

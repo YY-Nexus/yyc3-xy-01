@@ -1,0 +1,195 @@
+/**
+ * @file VideoPlayer.tsx
+ * @description YYC³ AI小语智能成长守护系统视频播放器组件，提供视频播放和控制功能
+ * @author YYC³团队 <admin@0379.email>
+ * @version 1.0.0
+ */
+
+"use client"
+
+import type React from "react"
+
+import { useState, useRef, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import type { GeneratedVideo } from "@/types/ai-video"
+
+interface VideoPlayerProps {
+  video: GeneratedVideo
+  onClose: () => void
+  onViewCountUpdate?: () => void
+}
+
+export default function VideoPlayer({ video, onClose, onViewCountUpdate }: VideoPlayerProps) {
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [currentTime, setCurrentTime] = useState(0)
+  const [showControls, setShowControls] = useState(true)
+  const playerRef = useRef<HTMLDivElement>(null)
+  const progressInterval = useRef<NodeJS.Timeout | null>(null)
+
+  useEffect(() => {
+    onViewCountUpdate?.()
+  }, [onViewCountUpdate])
+
+  useEffect(() => {
+    if (isPlaying) {
+      progressInterval.current = setInterval(() => {
+        setCurrentTime((prev) => {
+          if (prev >= video.duration) {
+            setIsPlaying(false)
+            return 0
+          }
+          return prev + 0.1
+        })
+      }, 100)
+    } else {
+      if (progressInterval.current) {
+        clearInterval(progressInterval.current)
+      }
+    }
+
+    return () => {
+      if (progressInterval.current) {
+        clearInterval(progressInterval.current)
+      }
+    }
+  }, [isPlaying, video.duration])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose()
+      if (e.key === " ") {
+        e.preventDefault()
+        setIsPlaying((prev) => !prev)
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [onClose])
+
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60)
+    const secs = Math.floor(seconds % 60)
+    return `${mins}:${secs.toString().padStart(2, "0")}`
+  }
+
+  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    const percent = (e.clientX - rect.left) / rect.width
+    setCurrentTime(percent * video.duration)
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 bg-black flex items-center justify-center"
+      onMouseMove={() => setShowControls(true)}
+    >
+      {/* 视频内容区域 */}
+      <div ref={playerRef} className="relative w-full h-full max-w-6xl max-h-[80vh] mx-auto">
+        {/* 视频画面（模拟） */}
+        <div className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-800 rounded-lg overflow-hidden">
+          <img
+            src={video.thumbnailUrl || "/placeholder.svg"}
+            alt={video.title}
+            className="w-full h-full object-contain"
+          />
+
+          {/* 播放状态覆盖层 */}
+          <AnimatePresence>
+            {!isPlaying && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 flex items-center justify-center bg-black/30"
+              >
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setIsPlaying(true)}
+                  className="w-20 h-20 rounded-full bg-white/90 flex items-center justify-center shadow-xl"
+                >
+                  <i className="ri-play-fill text-4xl text-slate-900 ml-1" />
+                </motion.button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* 字幕显示区 */}
+          {video.voiceoverText && isPlaying && (
+            <div className="absolute bottom-20 left-1/2 -translate-x-1/2 px-6 py-3 bg-black/70 rounded-lg max-w-2xl">
+              <p className="text-white text-center text-lg">
+                {video.voiceoverText.slice(0, Math.floor(currentTime * 5))}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* 控制栏 */}
+        <AnimatePresence>
+          {showControls && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent"
+            >
+              {/* 进度条 */}
+              <div className="h-1 bg-white/30 rounded-full cursor-pointer mb-4 group" onClick={handleProgressClick}>
+                <div
+                  className="h-full bg-white rounded-full relative transition-all"
+                  style={{ width: `${(currentTime / video.duration) * 100}%` }}
+                >
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  {/* 播放/暂停 */}
+                  <button
+                    onClick={() => setIsPlaying((prev) => !prev)}
+                    className="text-white hover:text-white/80 transition-colors"
+                  >
+                    <i className={`${isPlaying ? "ri-pause-fill" : "ri-play-fill"} text-2xl`} />
+                  </button>
+
+                  {/* 时间显示 */}
+                  <span className="text-white text-sm">
+                    {formatTime(currentTime)} / {formatTime(video.duration)}
+                  </span>
+
+                  {/* 音量 */}
+                  <button className="text-white hover:text-white/80 transition-colors">
+                    <i className="ri-volume-up-line text-xl" />
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  {/* 视频信息 */}
+                  <span className="text-white/70 text-sm">{video.title}</span>
+
+                  {/* 全屏 */}
+                  <button className="text-white hover:text-white/80 transition-colors">
+                    <i className="ri-fullscreen-line text-xl" />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* 关闭按钮 */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors"
+        >
+          <i className="ri-close-line text-xl" />
+        </button>
+      </div>
+    </motion.div>
+  )
+}

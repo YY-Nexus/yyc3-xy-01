@@ -1,0 +1,288 @@
+# YYC³ AI小语智能成长守护系统 - 本地AI服务Docker Compose配置
+# Intelligent Pluggable Mobile AI System - Local AI Services Docker Compose Configuration
+# Phase 2 Week 9-10: 本地AI模型集成
+
+version: '3.8'
+
+services:
+  # ========================
+  # Ollama 本地AI模型服务
+  # ========================
+  ollama:
+    image: ollama/ollama:latest
+    container_name: yyc3-ollama
+    restart: unless-stopped
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+      - OLLAMA_ORIGINS=*
+      - OLLAMA_NUM_PARALLEL=4
+      - OLLAMA_MAX_LOADED_MODELS=3
+    networks:
+      - yyc3-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+        limits:
+          memory: 16G
+          cpus: '8'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ========================
+  # ChromaDB 向量数据库
+  # ========================
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: yyc3-chromadb
+    restart: unless-stopped
+    ports:
+      - "${CHROMA_PORT:-8000}:8000"
+    volumes:
+      - chromadb_data:/chroma/chroma
+      - ./chromadb/config:/chroma/config:ro
+    environment:
+      - CHROMA_SERVER_HOST=0.0.0.0
+      - CHROMA_SERVER_HTTP_PORT=8000
+      - CHROMA_SERVER_CORS_ALLOW_ORIGINS=*
+      - CHROMA_SERVER_CORS_ALLOW_CREDENTIALS=true
+      - CHROMA_SERVER_CORS_ALLOW_HEADERS=*
+      - CHROMA_SERVER_CORS_ALLOW_METHODS=*
+      - CHROMA_LOG_LEVEL=INFO
+    networks:
+      - yyc3-network
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '2'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # ========================
+  # 本地AI服务API网关
+  # ========================
+  local-ai-gateway:
+    build:
+      context: .
+      dockerfile: services/ai/Dockerfile.gateway
+    container_name: yyc3-local-ai-gateway
+    restart: unless-stopped
+    ports:
+      - "${LOCAL_AI_PORT:-8081}:8081"
+    environment:
+      - NODE_ENV=production
+      - PORT=8081
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - CHROMA_HOST=chromadb
+      - CHROMA_PORT=8000
+      - CHROMA_COLLECTION_NAME=yyc3_knowledge_base
+      - DEFAULT_MODEL=llama3.1:8b
+      - MAX_CONCURRENT_REQUESTS=10
+      - REQUEST_TIMEOUT=30000
+      - CACHE_TTL=3600
+    volumes:
+      - ./logs/ai:/app/logs
+      - ai_cache:/app/cache
+    networks:
+      - yyc3-network
+    depends_on:
+      ollama:
+        condition: service_healthy
+      chromadb:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ========================
+  # Sentence Transformers 嵌入服务
+  # ========================
+  sentence-transformers:
+    image: sentence-transformers/all-MiniLM-L6-v2:latest
+    container_name: yyc3-sentence-transformers
+    restart: unless-stopped
+    ports:
+      - "${EMBEDDING_PORT:-8082}:8080"
+    environment:
+      - MODEL_NAME=all-MiniLM-L6-v2
+      - MAX_LENGTH=512
+      - BATCH_SIZE=32
+    networks:
+      - yyc3-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+        limits:
+          memory: 4G
+          cpus: '2'
+
+  # ========================
+  # Redis 缓存服务 (AI专用)
+  # ========================
+  ai-redis:
+    image: redis:7-alpine
+    container_name: yyc3-ai-redis
+    restart: unless-stopped
+    ports:
+      - "${AI_REDIS_PORT:-6380}:6379"
+    volumes:
+      - ai_redis_data:/data
+      - ./redis/ai-redis.conf:/usr/local/etc/redis/redis.conf:ro
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      - yyc3-network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1'
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ========================
+  # AI服务监控
+  # ========================
+  ai-prometheus:
+    image: prom/prometheus:latest
+    container_name: yyc3-ai-prometheus
+    restart: unless-stopped
+    ports:
+      - "${AI_PROMETHEUS_PORT:-9091}:9090"
+    volumes:
+      - ./monitoring/ai-prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ai_prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=7d'
+      - '--web.enable-lifecycle'
+    networks:
+      - yyc3-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1'
+
+  # ========================
+  # AI服务监控面板
+  # ========================
+  ai-grafana:
+    image: grafana/grafana:latest
+    container_name: yyc3-ai-grafana
+    restart: unless-stopped
+    ports:
+      - "${AI_GRAFANA_PORT:-3002}:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=aiadmin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+    volumes:
+      - ai_grafana_data:/var/lib/grafana
+      - ./monitoring/ai-grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/ai-grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    networks:
+      - yyc3-network
+    depends_on:
+      - ai-prometheus
+
+  # ========================
+  # 开发环境工具 (可选)
+  # ========================
+  ollama-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: yyc3-ollama-webui
+    restart: unless-stopped
+    ports:
+      - "${OLLAMA_WEBUI_PORT:-3003}:8080"
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - WEBUI_SECRET_KEY=yyc3-ai-secret-key
+    volumes:
+      - ollama_webui_data:/app/backend/data
+    networks:
+      - yyc3-network
+    depends_on:
+      - ollama
+    profiles:
+      - development
+
+  # ========================
+  # 开发环境 - ChromaDB管理界面 (可选)
+  # ========================
+  chromadb-admin:
+    image: chromadb/chroma:latest
+    container_name: yyc3-chromadb-admin
+    restart: unless-stopped
+    ports:
+      - "${CHROMA_ADMIN_PORT:-8001}:8000"
+    environment:
+      - CHROMA_SERVER_HOST=0.0.0.0
+      - CHROMA_SERVER_HTTP_PORT=8000
+      - CHROMA_SERVER_ADMIN_SERVER=true
+    volumes:
+      - chromadb_data:/chroma/chroma
+    networks:
+      - yyc3-network
+    depends_on:
+      - chromadb
+    profiles:
+      - development
+
+# ========================
+# 数据卷定义
+# ========================
+volumes:
+  ollama_data:
+    driver: local
+  chromadb_data:
+    driver: local
+  ai_cache:
+    driver: local
+  ai_redis_data:
+    driver: local
+  ai_prometheus_data:
+    driver: local
+  ai_grafana_data:
+    driver: local
+  ollama_webui_data:
+    driver: local
+
+# ========================
+# 网络定义
+# ========================
+networks:
+  yyc3-network:
+    external: true
+    name: yyc3-yxy-ai_yyc3-network

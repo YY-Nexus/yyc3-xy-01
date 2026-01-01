@@ -1,0 +1,550 @@
+# ========================================
+# YYC³ Project .gitignore Configuration
+# ========================================
+# @file .gitignore
+# @description YYC³项目远程仓库安全规避配置文件
+# @author YYC³ Team
+# @version 2.0.0
+# @created 2026-01-02
+# @updated 2026-01-02
+# @copyright Copyright (c) 2025 YYC³
+# @license MIT
+# ========================================
+
+# ========================================
+# 🔒 Security & Sensitive Information
+# ========================================
+
+# Environment Variables (CRITICAL - Never commit these)
+.env
+.env.*
+!.env.example
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.staging.local
+
+# API Keys & Secrets (CRITICAL - Never commit these)
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.cer
+*.der
+secrets/
+credentials/
+.keys/
+.secrets/
+
+# Configuration with sensitive data
+config/secrets.json
+config/credentials.json
+config/local.json
+config/production.json
+
+# ========================================
+# 📦 Dependencies
+# ========================================
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Package manager files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# ========================================
+# 🏗️ Build & Distribution
+# ========================================
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+.nuxt/
+.cache/
+.vuepress/dist/
+
+# Serverless
+.serverless/
+.vercel/
+.netlify/
+
+# ========================================
+# 🧪 Testing & Coverage
+# ========================================
+
+# Test coverage
+coverage/
+*.lcov
+.nyc_output/
+test-results/
+coverage.xml
+junit.xml
+
+# Test artifacts
+test-results/
+*.test.log
+test-logs/
+
+# ========================================
+# 📊 Logs & Monitoring
+# ========================================
+
+# Application logs
+logs/
+*.log
+log/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# System logs
+syslog/
+system.log
+error.log
+access.log
+debug.log
+
+# ========================================
+# 💾 Database & Storage
+# ========================================
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+
+# Data storage
+data/
+storage/
+uploads/
+temp-files/
+tmp-files/
+
+# Backup files
+*.backup
+*.bak
+*.dump
+
+# ========================================
+# 🔧 IDE & Editor
+# ========================================
+
+# VSCode
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/snippets/
+!.vscode/extensions.json
+.vscode/launch.json.bak
+.vscode/*.log
+
+# JetBrains IDEs
+.idea/
+*.iml
+*.iws
+*.ipr
+.idea_modules/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+.*.sw[a-z]
+*.un~
+Session.vim
+.netrwhist
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+auto-save-list
+tramp
+
+# ========================================
+# 🖥️ Operating System
+# ========================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ========================================
+# 🔄 Version Control
+# ========================================
+
+# Git
+.git/
+.gitignore
+.gitattributes
+.gitmodules
+.gitconfig
+
+# ========================================
+# 🚀 Deployment & CI/CD
+# ========================================
+
+# Deployment
+deploy/
+.deploy/
+deployment/
+.deployments/
+
+# CI/CD artifacts
+.github/workflows/*.log
+.gitlab-ci-local/
+.circleci/local/
+
+# ========================================
+# 📦 Package Management
+# ========================================
+
+# Composer (PHP)
+vendor/
+composer.lock
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Ruby
+*.gem
+*.rbc
+/.config
+/coverage/
+/InstalledFiles
+/pkg/
+/spec/reports/
+/spec/examples.txt
+/test/tmp/
+/test/version_tmp/
+/tmp/
+
+# Java
+*.class
+*.jar
+*.war
+*.ear
+target/
+.gradle/
+build/
+out/
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+
+# ========================================
+# 🎨 Assets & Media
+# ========================================
+
+# Large media files
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.flv
+*.wmv
+*.webm
+*.m4v
+*.3gp
+*.3g2
+
+# Large audio files
+*.wav
+*.flac
+*.aiff
+*.wma
+*.ogg
+*.aac
+
+# Large image files
+*.psd
+*.ai
+*.eps
+*.tiff
+*.bmp
+*.raw
+*.cr2
+*.nef
+*.arw
+
+# ========================================
+# 🔍 Temporary & Cache Files
+# ========================================
+
+# Temporary files
+*.tmp
+*.temp
+*.temp.*
+*.cache
+.cache/
+tmp/
+temp/
+*.swp
+*.swo
+*~
+
+# Cache directories
+.cache/
+.parcel-cache/
+.vite/
+.turbo/
+.eslintcache
+.stylelintcache
+
+# ========================================
+# 🛠️ Development Tools
+# ========================================
+
+# Docker
+.dockerignore.local
+docker-compose.override.yml
+docker-compose.local.yml
+
+# Kubernetes
+*.kubeconfig
+kubeconfig
+.helm/
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# ========================================
+# 📊 Analytics & Monitoring
+# ========================================
+
+# Analytics
+analytics/
+tracking/
+metrics/
+monitoring/
+
+# ========================================
+# 🎯 Project Specific
+# ========================================
+
+# YYC³ specific files
+xiaoyu-enhanced-server.js
+local-server.js
+dev-server.js
+test-server.js
+
+# Custom configurations
+config.local.*
+settings.local.*
+*.local.*
+
+# Development scripts
+scripts/dev/
+scripts/test-local/
+scripts/debug/
+
+# ========================================
+# 📝 Documentation & Notes
+# ========================================
+
+# Personal notes
+notes/
+TODO.md
+PERSONAL.md
+scratchpad/
+drafts/
+
+# ========================================
+# 🔐 Security & Compliance
+# ========================================
+
+# Security scans
+security-scan/
+vulnerability-scan/
+audit-logs/
+
+# Compliance documents
+compliance/
+audit/
+
+# ========================================
+# 🌐 Network & Connectivity
+# ========================================
+
+# Network configurations
+network-config/
+proxy-config/
+vpn-config/
+
+# ========================================
+# 📱 Mobile Development
+# ========================================
+
+# iOS
+ios/Pods/
+ios/*.xcodeproj/xcuserdata/
+ios/DerivedData/
+ios/*.moved-aside
+ios/*.pbxuser
+!ios/default.pbxuser
+ios/*.mode1v3
+!ios/default.mode1v3
+ios/*.mode2v3
+!ios/default.mode2v3
+ios/*.perspectivev3
+!ios/default.perspectivev3
+
+# Android
+android/app/build/
+android/.gradle/
+android/local.properties
+android/*.iml
+android/.idea/
+android/captures/
+
+# ========================================
+# 🎨 Design & Assets
+# ========================================
+
+# Design files
+design-assets/
+assets/
+public/uploads/
+public/temp/
+
+# ========================================
+# 📊 Data & Analytics
+# ========================================
+
+# Data exports
+exports/
+data-exports/
+analytics-data/
+
+# ========================================
+# 🔧 Custom Scripts & Tools
+# ========================================
+
+# Custom build scripts
+scripts/build-local/
+scripts/deploy-local/
+
+# Development tools
+tools/dev-tools/
+tools/debug-tools/
+
+# ========================================
+# 📋 Miscellaneous
+# ========================================
+
+# Archive files
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+*.iso
+
+# Compressed files
+*.gz
+*.bz2
+*.xz
+
+# Other
+*.pid
+*.seed
+*.pid.lock
+.npm
+.eslintcache
+.stylelintcache
+.prettierignore

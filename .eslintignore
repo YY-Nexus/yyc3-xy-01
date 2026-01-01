@@ -1,0 +1,16 @@
+# Add files here to ignore them from ESLint
+node_modules/
+.next/
+build/
+dist/
+*.log
+*.js.map
+*.ts.map
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.DS_Store
+*.md
+xiaoyu-enhanced-server.js

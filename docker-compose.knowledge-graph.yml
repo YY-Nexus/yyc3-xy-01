@@ -1,0 +1,433 @@
+# YYC³ AI小语智能成长守护系统 - 知识图谱Docker部署配置
+# Intelligent Pluggable Mobile AI System - Knowledge Graph Docker Deployment
+# Phase 2 Week 11-12: 知识图谱构建
+
+version: '3.8'
+
+services:
+  # Neo4j 图数据库服务
+  neo4j:
+    image: neo4j:5.12-community
+    container_name: yyc3-neo4j
+    restart: unless-stopped
+    ports:
+      - "7474:7474"   # HTTP
+      - "7687:7687"   # Bolt
+    environment:
+      # 数据库配置
+      NEO4J_AUTH: neo4j/yyc3-ai-neo4j-2025
+      NEO4J_PLUGINS: '["apoc", "graph-data-science", "graph-visualization"]'
+      NEO4J_dbms_default__database: yyc3_knowledge_graph
+      NEO4J_dbms_databases_default__to__read__only: false
+
+      # 内存配置
+      NEO4J_dbms_memory_heap_initial__size: 2G
+      NEO4J_dbms_memory_heap_max__size: 4G
+      NEO4J_dbms_memory_pagecache_size: 2G
+
+      # 连接配置
+      NEO4J_dbms_default__listen__address: 0.0.0.0
+      NEO4J_dbms_connector_bolt_listen__address: 0.0.0.0:7687
+      NEO4J_dbms_connector_http_listen__address: 0.0.0.0:7474
+
+      # 安全配置
+      NEO4J_dbms_security_procedures_unrestricted: apoc.*,gds.*
+      NEO4J_dbms_security_procedures_allowlist: apoc.*,gds.*
+
+      # 日志配置
+      NEO4J_dbms_logs_query_enabled: true
+      NEO4J_dbms_logs_query_threshold: 1s
+
+      # 事务配置
+      NEO4J_dbms_transaction_timeout: 60s
+      NEO4J_dbms_transaction_concurrent_maximum: 1000
+
+    volumes:
+      # 数据持久化
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - neo4j_import:/var/lib/neo4j/import
+      - neo4j_plugins:/plugins
+
+      # 配置文件
+      - ./knowledge-graph/config/neo4j.conf:/var/lib/neo4j/conf/neo4j.conf:ro
+      - ./knowledge-graph/scripts:/docker-entrypoint-initdb.d:ro
+
+    networks:
+      - yyc3-knowledge-network
+
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p yyc3-ai-neo4j-2025 'RETURN 1;' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+    deploy:
+      resources:
+        limits:
+          memory: 6G
+          cpus: '2'
+        reservations:
+          memory: 2G
+          cpus: '1'
+
+  # 知识图谱服务 API
+  knowledge-graph-api:
+    build:
+      context: .
+      dockerfile: knowledge-graph/Dockerfile
+    container_name: yyc3-knowledge-graph-api
+    restart: unless-stopped
+    ports:
+      - "8082:8082"
+    environment:
+      NODE_ENV: production
+      PORT: 8082
+
+      # Neo4j 连接配置
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USER: neo4j
+      NEO4J_PASSWORD: yyc3-ai-neo4j-2025
+      NEO4J_DATABASE: yyc3_knowledge_graph
+
+      # Redis 缓存配置
+      REDIS_HOST: knowledge-redis
+      REDIS_PORT: 6380
+      REDIS_PASSWORD: yyc3-redis-2025
+
+      # 推荐引擎配置
+      RECOMMENDATION_CACHE_TTL: 3600
+      RECOMMENDATION_BATCH_SIZE: 100
+      GNN_MODEL_PATH: /app/models/gnn
+
+      # 日志配置
+      LOG_LEVEL: info
+      LOG_FORMAT: json
+
+      # 监控配置
+      METRICS_ENABLED: true
+      METRICS_PORT: 9093
+
+    volumes:
+      # 模型文件
+      - ./knowledge-graph/models:/app/models:ro
+      # 配置文件
+      - ./knowledge-graph/config:/app/config:ro
+      # 日志目录
+      - ./logs/knowledge-graph:/app/logs
+
+    depends_on:
+      neo4j:
+        condition: service_healthy
+      knowledge-redis:
+        condition: service_healthy
+
+    networks:
+      - yyc3-knowledge-network
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
+
+  # Redis 缓存服务
+  knowledge-redis:
+    image: redis:7-alpine
+    container_name: yyc3-knowledge-redis
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    command: redis-server /usr/local/etc/redis/redis.conf
+    environment:
+      REDIS_PASSWORD: yyc3-redis-2025
+
+    volumes:
+      # 配置文件
+      - ./knowledge-graph/config/redis.conf:/usr/local/etc/redis/redis.conf:ro
+      # 数据持久化
+      - redis_data:/data
+      # 日志目录
+      - ./logs/redis:/var/log/redis
+
+    networks:
+      - yyc3-knowledge-network
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+
+  # 知识图谱可视化服务
+  knowledge-visualization:
+    build:
+      context: ./knowledge-graph/visualization
+      dockerfile: Dockerfile
+    container_name: yyc3-knowledge-visualization
+    restart: unless-stopped
+    ports:
+      - "3004:3000"
+    environment:
+      NODE_ENV: production
+      REACT_APP_API_BASE_URL: http://localhost:8082
+      REACT_APP_NEO4J_BROWSER_URL: http://localhost:7474
+
+    networks:
+      - yyc3-knowledge-network
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+  # 数据同步服务
+  knowledge-sync:
+    build:
+      context: ./knowledge-graph/sync
+      dockerfile: Dockerfile
+    container_name: yyc3-knowledge-sync
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+
+      # 数据源配置
+      MONGODB_URI: mongodb://localhost:27017/yyc3
+      POSTGRES_URI: postgresql://postgres:password@postgres:5432/yyc3
+
+      # Neo4j 配置
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USER: neo4j
+      NEO4J_PASSWORD: yyc3-ai-neo4j-2025
+
+      # 同步配置
+      SYNC_INTERVAL: 3600000  # 1小时
+      BATCH_SIZE: 1000
+      MAX_RETRIES: 3
+
+    volumes:
+      # 同步脚本
+      - ./knowledge-graph/sync/scripts:/app/scripts:ro
+      # 配置文件
+      - ./knowledge-graph/sync/config:/app/config:ro
+      # 日志目录
+      - ./logs/sync:/app/logs
+
+    depends_on:
+      neo4j:
+        condition: service_healthy
+      knowledge-graph-api:
+        condition: service_healthy
+
+    networks:
+      - yyc3-knowledge-network
+
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+
+  # 模型训练服务 (可选)
+  model-training:
+    build:
+      context: ./knowledge-graph/training
+      dockerfile: Dockerfile
+    container_name: yyc3-model-training
+    restart: "no"  # 手动启动
+    environment:
+      NODE_ENV: production
+
+      # Neo4j 配置
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USER: neo4j
+      NEO4J_PASSWORD: yyc3-ai-neo4j-2025
+
+      # 训练配置
+      EPOCHS: 100
+      BATCH_SIZE: 256
+      LEARNING_RATE: 0.001
+      MODEL_SAVE_PATH: /app/models
+
+    volumes:
+      # 训练脚本
+      - ./knowledge-graph/training/scripts:/app/scripts:ro
+      # 模型保存目录
+      - ./knowledge-graph/models:/app/models
+      # 配置文件
+      - ./knowledge-graph/training/config:/app/config:ro
+      # 日志目录
+      - ./logs/training:/app/logs
+
+    depends_on:
+      neo4j:
+        condition: service_healthy
+
+    networks:
+      - yyc3-knowledge-network
+
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '2'
+        reservations:
+          memory: 2G
+          cpus: '1'
+
+  # 监控服务
+  knowledge-monitoring:
+    image: prom/prometheus:latest
+    container_name: yyc3-knowledge-monitoring
+    restart: unless-stopped
+    ports:
+      - "9093:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.enable-lifecycle'
+
+    volumes:
+      # 监控配置
+      - ./knowledge-graph/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      # 监控规则
+      - ./knowledge-graph/monitoring/rules:/etc/prometheus/rules:ro
+      # 数据持久化
+      - prometheus_data:/prometheus
+
+    networks:
+      - yyc3-knowledge-network
+
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+
+  # Grafana 可视化监控面板
+  knowledge-grafana:
+    image: grafana/grafana:latest
+    container_name: yyc3-knowledge-grafana
+    restart: unless-stopped
+    ports:
+      - "3005:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: yyc3-grafana-2025
+      GF_USERS_ALLOW_SIGN_UP: false
+
+      # 数据源配置
+      GF_SECURITY_DATASOURCES: '[
+        {
+          "name": "Prometheus",
+          "type": "prometheus",
+          "access": "proxy",
+          "url": "http://knowledge-monitoring:9090",
+          "isDefault": true
+        }
+      ]'
+
+    volumes:
+      # 数据持久化
+      - grafana_data:/var/lib/grafana
+      # 配置文件
+      - ./knowledge-graph/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      # 仪表板配置
+      - ./knowledge-graph/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+
+    depends_on:
+      - knowledge-monitoring
+
+    networks:
+      - yyc3-knowledge-network
+
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.25'
+        reservations:
+          memory: 256M
+          cpus: '0.1'
+
+# 网络配置
+networks:
+  yyc3-knowledge-network:
+    driver: bridge
+    name: yyc3-knowledge-network
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# 数据卷配置
+volumes:
+  # Neo4j 数据卷
+  neo4j_data:
+    driver: local
+    name: yyc3_neo4j_data
+  neo4j_logs:
+    driver: local
+    name: yyc3_neo4j_logs
+  neo4j_import:
+    driver: local
+    name: yyc3_neo4j_import
+  neo4j_plugins:
+    driver: local
+    name: yyc3_neo4j_plugins
+
+  # Redis 数据卷
+  redis_data:
+    driver: local
+    name: yyc3_redis_data
+
+  # 监控数据卷
+  prometheus_data:
+    driver: local
+    name: yyc3_prometheus_data
+  grafana_data:
+    driver: local
+    name: yyc3_grafana_data
+
+# 配置文件示例 (将在实际部署时创建)
+# 需要创建的配置文件:
+# - ./knowledge-graph/config/neo4j.conf
+# - ./knowledge-graph/config/redis.conf
+# - ./knowledge-graph/monitoring/prometheus.yml
+# - ./knowledge-graph/monitoring/rules/*.yml
+# - ./knowledge-graph/monitoring/grafana/provisioning/*.yml
