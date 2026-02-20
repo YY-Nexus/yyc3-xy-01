@@ -82,7 +82,7 @@
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.454.0",
     "neo4j-driver": "^6.0.1",
-    "next": "^14.2.35",
+    "next": "^16.1.6",
     "next-intl": "^4.6.1",
     "next-themes": "^0.4.6",
     "openai": "^4.67.1",
